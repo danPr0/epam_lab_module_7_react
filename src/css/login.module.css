@@ -1,0 +1,42 @@
+@import "elements/root.css";
+
+.loginRoot {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0 auto;
+    width: 50%;
+}
+
+.login-header {
+    background-color: #eeeeee;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.login-form-container {
+    display: flex;
+    justify-content: center;
+    height: 60%;
+    width: 100%;
+    background-color: white;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 50%;
+    padding: 2rem 0;
+    background-color: white;
+}
+
+.login-form__inputs-group {
+    align-self: stretch;
+}
+
+.login-error-msg {
+    align-self: start;
+    margin: 0.5rem 0;
+    height: 1.5rem;
+}

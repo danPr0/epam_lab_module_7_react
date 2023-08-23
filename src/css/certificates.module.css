@@ -1,0 +1,116 @@
+@import "elements/root.css";
+
+.certificatesRoot {
+    margin: 1rem auto;
+    width: 90%;
+}
+
+.error {
+    display: flex;
+    align-items: center;
+    /*margin-bottom: 1rem;*/
+    height: 3rem;
+    padding: 0 1rem;
+    background-color: #f2dede;
+}
+
+.error__message {
+    flex-grow: 1;
+    margin: 0 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+
+/*.errorMessage > * {*/
+/*    height: 2rem;*/
+/*    font-weight: bold;*/
+/*}*/
+
+.search__submitButton {
+    width: 10rem;
+}
+
+.certificates {
+    /*display: flex;*/
+    /*flex-direction: column;*/
+    /*justify-content: space-between;*/
+    /*height: 75%;*/
+}
+
+
+.certificates__table {
+    width: 100%;
+}
+
+.certificates__table table, th, td {
+    border: 2px solid #848484 !important;
+    border-collapse: collapse;
+}
+
+.certificates__table thead {
+    height: 2.5rem;
+}
+
+.certificates__table th {
+    background-color: #ccc !important;
+}
+
+.tableSortHeader {
+    display: flex;
+    align-items: center;
+}
+
+.certificates__table tr:nth-child(odd) {
+    background-color: white;
+}
+
+.certificates__table tr:nth-child(even) {
+    background-color: #ececec;
+}
+
+td {
+    overflow: hidden;
+    max-width: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.certificates__table tr {
+    max-height: 2.5rem;
+}
+
+.certificates__table td {
+    /*max-height: 2.5rem !important;*/
+    padding: 0.25rem !important;
+}
+
+.certificates__pagination {
+    /*justify-self: end;*/
+    position: relative;
+}
+
+.perPageSelect {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+}
+
+.w5 {
+    width: 5%;
+}
+
+.w15 {
+    width: 15%;
+}
+
+.w20 {
+    width: 20%;
+}
+
+.cursorPointer {
+    cursor: pointer;
+}
