@@ -1,0 +1,14 @@
+.success {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  background-color: #c8f2bf;
+  color: #0f701a;
+
+  &__message {
+    flex-grow: 1;
+    margin: 0 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+}

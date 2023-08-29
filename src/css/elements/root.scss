@@ -6,14 +6,18 @@ html {
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
     margin: 0;
     height: 100%;
     background-color: #c0c0c0 !important;
     font-family: Arial, Helvetica, sans-serif;
-    /*color: #626262;*/
+    //color: #626262;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
 }
 
 main {

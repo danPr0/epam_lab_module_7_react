@@ -1,24 +1,19 @@
-import styles from '../css/addItemModal.module.css'
-import modalStyles from '../css/elements/modal.module.css'
-import {Form} from 'formik'
 import AddItemForm from '../forms/addItemForm'
+import styles from '../css/addItemModal.module.scss'
+import { useContext } from 'react'
+import AddItemModalContext from '../context/addItemModalContext'
 
 function AddItemModal(props) {
+    const { presetValues } = useContext(AddItemModalContext)
 
-    if (props.show) {
+    if (props.display) {
         return (
-            <div className={modalStyles.modalContainer}>
-                <div className={modalStyles.modal}>
-                    <h1 className={modalStyles.modalHeader}>Add new certificate</h1>
-                    <AddItemForm/>
-                    {/*<Form>*/}
-                    {/*    <div className={styles.inputGroupContainer} >*/}
-                    {/*        <label className={styles.inputGroup}>*/}
-                    {/*            <span>Title</span>*/}
-                    {/*            <input className={styles.inputGroup__input} type='text' name='title'/>*/}
-                    {/*        </label>*/}
-                    {/*    </div>*/}
-                    {/*</Form>*/}
+            <div className={styles.modalContainer}>
+                <div className={styles.modal}>
+                    <h1 className={styles.modal__header}>
+                        {presetValues === null ? 'Add new certificate' : 'Edit certificate'}
+                    </h1>
+                    <AddItemForm />
                 </div>
             </div>
         )

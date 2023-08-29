@@ -1,117 +1,165 @@
-import {Form, Formik, useField} from 'formik'
-import styles from '../css/addItemModal.module.css'
-import AddItemFormInput from './formElements/addItemFormInput'
-import React, {useState} from 'react'
-import {Button} from 'react-bootstrap'
-import * as Yup from 'yup'
+import React, { useContext, useReducer } from 'react'
+import AddItemFormInput from './formInputs/addItemFormInput'
+import AddItemModalContext from '../context/addItemModalContext'
+
 import axios from 'axios'
-import {useNavigate} from 'react-router-dom'
-import MaterialIcon from 'react-google-material-icons'
+import { Form, Formik } from 'formik'
+import * as Yup from 'yup'
+import { Button } from 'react-bootstrap'
+import { Error } from '@mui/icons-material'
+
+import styles from '../css/addItemModal.module.scss'
 
 function AddItemForm() {
+    const { presetValues, successCallback, onCancel } = useContext(AddItemModalContext)
 
-    const navigate = useNavigate()
-    const [tags, setTags] = useState([])
-    const [declinedRequestMessage, setDeclinedRequestMessage] = useState('')
+    const tagsReducer = (tags, action) => {
+        switch (action.type) {
+            case 'add':
+                return [...tags, action.payload]
+            case 'remove':
+                return tags.filter((t) => t !== action.payload)
+            default:
+                break
+        }
+    }
+    const [tags, dispatchTags] = useReducer(
+        (state, action) => tagsReducer(state, action),
+        presetValues !== null ? presetValues.tags : []
+    )
 
     const validationSchema = () =>
         Yup.object({
             name: Yup.string()
-                   .min(6, 'Must be 6-30 characters')
-                   .max(30, 'Must be 6-30 characters')
-                   .required('Required'),
+                .min(6, 'Must be 6-30 characters')
+                .max(30, 'Must be 6-30 characters')
+                .required('Required'),
             description: Yup.string()
-                   .min(12, 'Must be 12-1000 characters')
-                   .max(1000, 'Must be 12-1000 characters')
-                   .required('Required'),
-            price: Yup.number()
-                   .min(0)
-                   .required('Required'),
+                .min(12, 'Must be 12-1000 characters')
+                .max(1000, 'Must be 12-1000 characters')
+                .required('Required'),
+            price: Yup.number().positive('Must be positive number').required('Required'),
             duration: Yup.number()
-                   .min(0)
-                   .required('Required')
+                .integer('Must be non-negative integer number')
+                .min(0, 'Must be non-negative integer number')
+                .required('Required')
         })
 
-    function validateTag(tagName) {
-        return tagName.length >= 3 && tagName.length <= 15
-    }
+    const initialFormValues =
+        presetValues !== null
+            ? {
+                  name: presetValues.name,
+                  description: presetValues.description,
+                  price: presetValues.price,
+                  duration: presetValues.duration
+              }
+            : { name: '', description: '', price: '', duration: '' }
 
     return (
-        <Formik initialValues={{
-            name: '',
-            description: '',
-            price: '',
-            duration: ''
-        }}
-                validationSchema={validationSchema}
-                onSubmit={values => onFormSubmit(values)}>
-            {formik => (
+        <Formik
+            initialValues={initialFormValues}
+            validationSchema={validationSchema}
+            onSubmit={(values) => handleFormSubmit(values, successCallback)}
+        >
+            {() =>
                 <Form>
-                    <div className={`text-danger ${styles.error}`}>
-                        <span style={{height: '24px'}}><MaterialIcon icon="error" size={24}/></span>
-                        <span className={styles.error__message}>dfsdfdlk fjsdklfjkl{declinedRequestMessage}</span>
+                    <div className={`text-danger d-none ${styles.error}`} id="addItemError">
+                        <Error className={styles.error__icon} />
+                        <span className={styles.error__message} id="addItemErrorMessage"></span>
                     </div>
-                    <AddItemFormInput type='text' name='name' label='Title'/>
-                    <div className={styles.inputGroupContainer}>
-                        <label className={styles.inputGroup}>
-                            <span className={styles.inputGroup__label}>Description</span>
-                            <textarea className={styles.inputGroup__input + ' ' + styles.inputGroup__textarea} name='description' {...formik.getFieldProps('description')}/>
-                        </label>
-                        <div className={`text-danger ${styles.inputGroup__error}`}>{formik.touched.description && formik.errors.description ? formik.errors.description : ''}</div>
-                    </div>
-                    <AddItemFormInput type='text' name='duration' label='Duration'/>
-                    <AddItemFormInput type='text' name='price' label='Price'/>
+
+                    <AddItemFormInput type="text" name="name" label="Title" />
+                    <AddItemFormInput type="text" name="description" label="Description" inputTag="textarea" />
+                    <AddItemFormInput type="text" name="duration" label="Duration" />
+                    <AddItemFormInput type="text" name="price" label="Price" />
+
                     <div className={styles.inputGroupContainer}>
                         <label className={styles.inputGroup}>
                             <span className={styles.inputGroup__label}>Tags</span>
-                            <input type='text' name='description' className={styles.inputGroup__input} id="tagNameInput"/>
-                            <Button className={`btn-primary ${styles.addTagButton}`} onClick={() => {
-                                const tagToAdd = document.getElementById('tagNameInput').value
-                                const tagErrorElement = document.getElementById('tagValidationError')
-
-                                if (!validateTag(tagToAdd)) {
-                                    tagErrorElement.textContent = 'Must be 3-15 characters'
-                                } else if (tags.indexOf(tagToAdd) !== -1) {
-                                    tagErrorElement.textContent = 'Such tag already exists'
-                                } else {
-                                    tagErrorElement.textContent = ''
-                                    setTags([...tags, tagToAdd])
-                                }
-                            }}>Add</Button>
+                            <input type="text" className={styles.inputGroup__input} id="tagNameInput" />
+                            <Button className={`btn-primary ${styles.addTagButton}`} onClick={handleTagInputSubmit}>
+                                Add
+                            </Button>
                         </label>
                         <div className={`text-danger ${styles.inputGroup__error}`} id="tagValidationError"></div>
                     </div>
+
                     <div className={styles.tagList}>
-                        {
-                            tags.map((t, index) => <button className={`btn btn-outline-dark`} key={index} onClick={() => {
-                                setTags(tags => tags.filter(t1 => t1 !== t))
-                            }}>{t + ' X'}</button>)
-                        }
+                        {tags.map((t) =>
+                            <button className="btn btn-outline-dark" key={t} onClick={() => deleteTag(t)}>
+                                {t + ' X'}
+                            </button>
+                        )}
                     </div>
+
                     <div className={styles.formActions}>
-                        <Button className={styles.submitButton} type="submit">Submit</Button>
-                        <Button className="btn-secondary">Cancel</Button>
+                        <Button className={styles.formActions__submit} type="submit">
+                            Submit
+                        </Button>
+                        <Button className="btn-secondary" onClick={onCancel}>
+                            Cancel
+                        </Button>
                     </div>
                 </Form>
-            )
             }
         </Formik>
     )
 
-    function onFormSubmit(values) {
-        console.log('here')
-        console.log(tags)
-        values.tags = tags
-        console.log(values)
+    function handleTagInputSubmit() {
+        const tagToAdd = document.getElementById('tagNameInput').value
+        const tagErrorElement = document.getElementById('tagValidationError')
 
+        if (!validateTag(tagToAdd)) {
+            tagErrorElement.textContent = 'Must be 3-15 characters'
+        } else if (tags.indexOf(tagToAdd) !== -1) {
+            tagErrorElement.textContent = 'Such tag already exists'
+        } else {
+            tagErrorElement.textContent = ''
+            dispatchTags({ type: 'add', payload: tagToAdd })
+        }
+
+        function validateTag(tagName) {
+            return tagName.length >= 3 && tagName.length <= 15
+        }
+    }
+
+    function deleteTag(tagName) {
+        dispatchTags({ type: 'remove', payload: tagName })
+    }
+
+    function handleFormSubmit(values, successCallback) {
+        values.tags = tags
+        if (presetValues === null) {
+            addCertificate(values, successCallback)
+        } else {
+            editCertificate(values, successCallback)
+        }
+    }
+
+    function addCertificate(values, successCallback) {
         axios
-        .post('/gift-certificates', values)
+        .post('/api/gift-certificates', values)
         .then(() => {
-            // sessionStorage.setItem('email', values.email)
-            // navigate('/certificates')
-            console.log('success')
+            document.getElementById('addItemError').classList.add('d-none')
+            successCallback(`Coupon "${values.name}" was added.`)
         })
-        .catch(error => setDeclinedRequestMessage(error.response.data.errorMessage))
+        .catch((error) => {
+            document.getElementById('addItemError').classList.remove('d-none')
+            document.getElementById('addItemErrorMessage').textContent = error.response.data.errorMessage
+        })
+    }
+
+    function editCertificate(values, successCallback) {
+        axios
+        .patch(`/api/gift-certificates/${presetValues.id}`, values)
+        .then(() => {
+            document.getElementById('addItemError').classList.add('d-none')
+            successCallback(`Coupon "${values.name}" was edited.`)
+        })
+        .catch((error) => {
+            document.getElementById('addItemError').classList.remove('d-none')
+            document.getElementById('addItemErrorMessage').textContent = error.response.data.errorMessage
+        })
     }
 }
 

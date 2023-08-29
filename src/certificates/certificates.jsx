@@ -1,296 +1,266 @@
-import Header from '../pageElements/header'
-import Footer from '../pageElements/footer'
-import styles from '../css/certificates.module.css'
-import {Button} from 'react-bootstrap'
-import axios from 'axios'
-import {useCallback, useEffect, useReducer, useRef, useState} from 'react'
-import MaterialIcon from 'react-google-material-icons'
-import {Map} from 'react-lodash'
-import {useNavigate, useSearchParams} from 'react-router-dom'
+import React, { useCallback, useEffect, useReducer, useState } from 'react'
+import { useNavigate, createSearchParams, useSearchParams } from 'react-router-dom'
 import DeleteItemModal from '../modals/deleteItemModal'
 import AddItemModal from '../modals/addItemModal'
+import Header from '../pageElements/header'
+import Footer from '../pageElements/footer'
+import Pagination from './pagination'
+import Table from './table'
+import SortContext from '../context/sortContext'
+import PaginationContext from '../context/paginationContext'
+import AddItemModalContext from '../context/addItemModalContext'
+
+import axios from 'axios'
+import { Button } from 'react-bootstrap'
+import { Close, Error, CheckCircle } from '@mui/icons-material'
+
+import styles from '../css/certificates.module.scss'
 
 function Certificates() {
 
-    const navigate = useNavigate();
-    const [forcedFetch, forceFetch] = useReducer(x => x + 1, 0, v => v);
+    const navigate = useNavigate()
     const [urlParams] = useSearchParams()
 
-    const [addModalShow, setAddModalShow] = useState(true)
-    const [idToAdd, setIdToAdd] = useState(null)
-    const [deleteModalShow, setDeleteModalShow] = useState(false)
-    const [idToDelete, setIdToDelete] = useState(null)
+    const [addModalDisplay, setAddModalDisplay] = useState(false)
+    const [addModalPresetValues, setAddModalPresetValues] = useState(null)
+    const [deleteModalDisplay, setDeleteModalDisplay] = useState(false)
+    const [certificateToDelete, setCertificateToDelete] = useState({})
 
     const [certificates, setCertificates] = useState([])
-    const [certificatesElements, setCertificatesElements] = useState([])
-    const [curPage, setCurPage] = useState(urlParams.get('page') === null ? 1 : parseInt(urlParams.get('page')))
-    const [noOfPages, setNoOfPages] = useState(25)
-    const [perPage, setPerPage] = useState(urlParams.get('total') === null ? 10 : parseInt(urlParams.get('total')))
-    const [searchInput, setSearchInput] = useState(urlParams.get('search') === null ? '' : urlParams.get('search'))
-    const [dateSort, setDateSort] = useState(urlParams.get('dateSort') === null ? 'asc' : urlParams.get('dateSort'))
-    const [nameSort, setNameSort] = useState(urlParams.get('nameSort'))
+    const [certificatesFetch, dispatchCertificatesFetch] =
+              useReducer((x) => x + 1, 0, (v) => v)
 
-    const pagesInLine = 10
-    const pages = useRef([])
+    const [currentPage, setCurrentPage] = useState(urlParams.get('page') === null ? 1 : parseInt(urlParams.get('page')))
+    const [noOfPages, setNoOfPages] = useState(0)
+    const [totalPerPage, setTotalPerPage] =
+              useState(urlParams.get('total') === null ? 10 : parseInt(urlParams.get('total')))
+    const [searchInput, setSearchInput] =
+              useState(decodeURIComponent(urlParams.get('search') === null ? '' : urlParams.get('search')))
 
-    useEffect(() => {
-        document.getElementById('searchInput').value = urlParams.get('search') === null ? '' : urlParams.get('search')
-    }, [urlParams])
-
-    useEffect(() => {
-        const start = Math.floor((curPage - 1) / pagesInLine) * pagesInLine
-        pages.current = [...Array(noOfPages).keys()].map(i => i + 1).slice(start, start + pagesInLine).map((i, index) =>
-            <li className="page-item" key={index}>
-                <button className={"page-link " + (curPage === i ? "disabled" : "")}
-                        onClick={() => setCurPage(i)}>{i}</button>
-            </li>)
-    }, [noOfPages, curPage])
+    const [dateSort, dispatchDateSort] =
+              useReducer((sort) => getNextSort(sort), urlParams.get('dateSort'), (v) => v === null ? 'asc' : v)
+    const [nameSort, dispatchNameSort] = useReducer((sort) => getNextSort(sort), urlParams.get('nameSort'), (v) => v)
 
     useEffect(() => {
-        (async function() {
-            fetchCertificates().then(r => setCertificates(r))
-        })()
-        async function fetchCertificates() {
-            let result = []
+        document.getElementById('searchInput').value = searchInput
+    }, [searchInput])
 
-            let tagNames = searchInput.match(/#\([^)]*\)/g)
-            let url = `/gift-certificates?descriptionPart=${searchInput.replaceAll(/#\([^)]*\)/g, '').trim()}` +
-                `&page=${curPage}&total=${perPage}`
-            let navigateUrl = `/certificates?search=${encodeURIComponent(searchInput)}&page=${curPage}&total=${perPage}`
-            if (tagNames != null) {
-                tagNames = tagNames.map(t => t.substring(2, t.length - 1))
-                url += tagNames.reduce((accumulator, curValue) => accumulator + '&tagName=' + curValue, '')
-            }
-            if (dateSort != null) {
-                url += `&sort=createDate_${dateSort}`
-                navigateUrl += `&dateSort=${dateSort}`
-            }
-            if (nameSort != null) {
-                url += `&sort=name_${nameSort}`
-                navigateUrl += `&nameSort=${nameSort}`
-            }
-
-            navigate(navigateUrl)
-
-            await axios
-            .get(url)
-            .then((response) => {
-                if (response.data._embedded === undefined) {
-                    document.getElementById('errorMessage').textContent = 'No certificates found'
-                } else {
-                    result = response.data._embedded.giftCertificates
-                }
-            })
-            .catch(error => {
-                document.getElementById('errorMessage').textContent = error.response.data.errorMessage
-                document.getElementById('error').style.display = 'flex'
-            })
-
-            return result
+    const createNavigationParams = useCallback(() => {
+        const navigationParams = {
+            search: encodeURIComponent(searchInput),
+            page: currentPage.toString(),
+            total: totalPerPage.toString()
         }
-    }, [searchInput, curPage, perPage, dateSort, nameSort, forcedFetch, navigate])
+        if (dateSort !== null) {
+            navigationParams.dateSort = dateSort
+        }
+        if (nameSort !== null) {
+            navigationParams.nameSort = nameSort
+        }
+
+        return navigationParams
+    }, [currentPage, dateSort, nameSort, totalPerPage, searchInput])
+
+    const createRequestParams = useCallback(() => {
+        const tagPattern = /#\([^)]*\)/g
+
+        const requestParams = new URLSearchParams()
+        requestParams.append('textFilter', searchInput.replaceAll(tagPattern, '').trim())
+        requestParams.append('page', currentPage.toString())
+        requestParams.append('total', totalPerPage.toString())
+
+        let tagsInput = searchInput.match(tagPattern)
+        if (tagsInput !== null) {
+            tagsInput.forEach((t) => requestParams.append('tagName', t.substring(2, t.length - 1)))
+        }
+
+        if (dateSort !== null) {
+            requestParams.append('sort', `createDate_${dateSort}`)
+        }
+        if (nameSort !== null) {
+            requestParams.append('sort', `name_${nameSort}`)
+        }
+
+        return requestParams
+    }, [currentPage, dateSort, nameSort, totalPerPage, searchInput])
+
+    const fetchCertificates = useCallback(() => {
+        axios
+        .get('/api/gift-certificates', { params: createRequestParams() })
+        .then(response => {
+            const certificateOnPage = response.data._embedded.giftCertificates.map(c => {
+                c.tags = c.tags.map(t => t.name)
+                return c
+            })
+            setCertificates(certificateOnPage)
+
+            if (certificateOnPage.length === 0) {
+                document.getElementById('noItemsMessage').classList.remove('d-none')
+            } else {
+                const totalPages = response.data._embedded.totalPages
+                setNoOfPages(totalPages)
+                if (currentPage > totalPages) {
+                    setCurrentPage(totalPages)
+                }
+                document.getElementById('noItemsMessage').classList.add('d-none')
+            }
+        })
+        .catch(error => setErrorMessage(error.response.data.errorMessage))
+    }, [certificatesFetch, createRequestParams, currentPage])
 
     useEffect(() => {
-        setCertificatesElements(certificates.map((c, index) =>
-            <tr key={index}>
-                <td className={styles.w20}>{c.createdDate}</td>
-                <td className={styles.w20}>{c.name}</td>
-                <td className={styles.w20}>{c.tags.map(t => t.name + ' ')}</td>
-                <td className={styles.w20}>{c.description}</td>
-                <td className={styles.w5}>{c.price}</td>
-                <td className={styles.w15}>
-                    <Button className="btn-sm btn-primary">View</Button>
-                    <Button className="btn-sm btn-warning">Edit</Button>
-                    <Button className="btn-sm btn-danger" onClick={() => {
-                        setDeleteModalShow(true)
-                        setIdToDelete(c.id)
-                    }
-                    }>Delete</Button>
-                </td>
-            </tr>
-        ))
-    }, [certificates])
+        fetchCertificates()
+        navigate({
+            pathname: '/certificates',
+            search:   createSearchParams(createNavigationParams()).toString()
+        })
+    }, [createNavigationParams, fetchCertificates, navigate])
 
     return (
         <>
-            <Header/>
-            <main className={styles.certificatesRoot}>
-                <div className={`mb-2 text-danger ${styles.error}`} id="error">
-                    <span style={{height: '32px'}}><MaterialIcon icon="error" size={32}/></span>
-                    <span className={styles.error__message} id="errorMessage">Error message</span>
-                    <span style={{height: '32px', cursor: 'pointer'}} onClick={(e) => e.currentTarget.parentNode.style.display = 'none'}><MaterialIcon icon="close" size={32}/></span>
-                </div>
-                <div className="input-group mb-4 search">
-                    <input className="form-control search__input" id="searchInput" type="text" placeholder="Search..."/>
-                    <div className="input-group-append">
-                        <Button className={styles.search__submitButton}
-                                onClick={() => setSearchInput(document.getElementById('searchInput').value)}>Go!</Button>
-                    </div>
-                </div>
-                <div className={styles.certificates}>
-                    <table className={`mb-4 ${styles.certificates__table}`}>
-                        <thead>
-                        <tr>
-                            <th className={styles.w20 + ' ' + styles.cursorPointer}
-                                onClick={() => {
-                                    const nextSort = getNextSort(dateSort)
-                                    setDateSort(nextSort)
-                                    document.getElementById('dateSortIcon').textContent = getSortIconName(nextSort)
-                                }}>
+            <Header onAddItemClick={() => setAddModalDisplay(true)} />
 
-                                <div className={styles.tableSortHeader}>
-                                    <span className="material-icons" id="dateSortIcon">{getSortIconName(dateSort)}</span>
-                                    <span>Datetime</span>
-                                </div>
-                            </th>
-                            <th className={styles.w20 + ' ' + styles.cursorPointer}
-                                onClick={() => {
-                                    const nextSort = getNextSort(nameSort)
-                                    setNameSort(nextSort)
-                                    document.getElementById('titleSortIcon').textContent = getSortIconName(nextSort)
-                                }}>
+            <main className={styles.root}>
+                {createErrorPanel()}
+                {createSuccessPanel()}
 
-                                <div className={styles.tableSortHeader}>
-                                    <span className="material-icons" id="titleSortIcon">{getSortIconName(nameSort)}</span>
-                                    <span>Title</span>
-                                </div>
-                            </th>
-                            <th className={`ps-3 ${styles.w20}`}>Tags</th>
-                            <th className={`ps-3 ${styles.w20}`}>Description</th>
-                            <th className={`ps-1 ${styles.w5}`}>Price</th>
-                            <th className={`ps-3 ${styles.w15}`}>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {certificatesElements}
-                        </tbody>
-                    </table>
-                    <div className={styles.certificates__pagination}>
-                        <ul className="pagination justify-content-center m-0">
-                            <li className="page-item">
-                                {
-                                    curPage === 1
-                                        ? <button className="page-link disabled">«</button>
-                                        : <button className="page-link" onClick={() => setCurPage(1)}>«</button>
-                                }
-                            </li>
-
-                            <li className="page-item" style={
-                                curPage <= pagesInLine
-                                    ? {display: 'none'}
-                                    : {}
-                            }>
-                                <button className="page-link"
-                                        onClick={() => setCurPage((Math.floor(curPage / pagesInLine) - 1) * pagesInLine + 1)}>...
-                                </button>
-                            </li>
-
-                            {pages.current}
-
-                            <li className="page-item" style={
-                                Math.floor((curPage - 1) / pagesInLine) === Math.floor(noOfPages / pagesInLine)
-                                    ? {display: 'none'}
-                                    : {}
-                            }>
-                                <button className="page-link"
-                                        onClick={() => setCurPage((Math.floor((curPage - 1) / pagesInLine) + 1) * pagesInLine + 1)}>...
-                                </button>
-                            </li>
-
-                            <li className="page-item">
-                                {
-                                    curPage === noOfPages
-                                        ? <button className="page-link disabled">»</button>
-                                        : <button className="page-link" onClick={() => setCurPage(noOfPages)}>»</button>
-                                }
-                            </li>
-                        </ul>
-                        <div className={styles.perPageSelect}>
-                            <select className="form-select form-select-sm" defaultValue={perPage}
-                                    onChange={(e) => setPerPage(parseInt(e.target.value))}>
-                                {
-                                    [10, 20, 50].map(v => <option key={v} disabled={perPage === v}>{v}</option>)
-                                }
-                            </select>
+                {createSearchInput()}
+                {
+                    certificates.length !== 0
+                        ?
+                        <div className={styles.certificates}>
+                            <SortContext.Provider value={{ dateSort, nameSort, setNextDateSort: dispatchDateSort,
+                                setNextNameSort: dispatchNameSort }}>
+                                <Table certificates={certificates} onItemEdit={handleCertificateEdit}
+                                       onItemDelete={handleCertificateDeletion} />
+                            </SortContext.Provider>
+                            <PaginationContext.Provider
+                                value={{ page: currentPage, total: totalPerPage, noOfPages,
+                                    setPage: setCurrentPage, setTotal: setTotalPerPage }}>
+                                <Pagination />
+                            </PaginationContext.Provider>
                         </div>
-                    </div>
-                </div>
+                        : null
+                }
+                <div className="d-none text-center" id="noItemsMessage">No certificates found</div>
             </main>
-            <AddItemModal show={addModalShow}/>
-            <DeleteItemModal show={deleteModalShow} certificateId={idToDelete} onConfirm={() => onDeleteModalConfirm(idToDelete)}
-                             onCancel={() => onDeleteModalCancel()}/>
-            <Footer/>
+
+            <AddItemModalContext.Provider
+                value={{presetValues: addModalPresetValues, successCallback: handleAddModalSuccess,
+                    onCancel: handleAddModalCancel}}>
+                <AddItemModal display={addModalDisplay} />
+            </AddItemModalContext.Provider>
+
+            <DeleteItemModal display={deleteModalDisplay} certificateId={certificateToDelete.id}
+                             onConfirm={() => handleDeleteModalConfirm(certificateToDelete)}
+                             onCancel={handleDeleteModalCancel} />
+            <Footer />
         </>
     )
 
+    function createErrorPanel() {
+        return (
+            <div className={`d-none text-danger ${styles.error}`} id="error">
+                <Error className={styles.error__icon} />
+                <span className={styles.error__message} id="errorMessage"></span>
+                <Close className={`${styles.cursorPointer} ${styles.error__icon}`}
+                       onClick={(e) => e.currentTarget.parentNode.classList.add('d-none')} />
+            </div>
+        )
+    }
 
+    function createSuccessPanel() {
+        return (
+            <div className={`d-none ${styles.success}`} id="success">
+                <CheckCircle className={styles.success__icon} />
+                <span className={styles.success__message} id="successMessage"></span>
+                <Close
+                    className={`${styles.cursorPointer} ${styles.success__icon}`}
+                    onClick={(e) => e.currentTarget.parentNode.classList.add('d-none')} />
+            </div>
+        )
+    }
 
-    function onDeleteModalConfirm(certificateId) {
-        setDeleteModalShow(false)
+    function createSearchInput() {
+        return (
+            <div className="input-group mb-4 search">
+                <input className="form-control search__input" id="searchInput" type="text"
+                       placeholder="Search..." />
+                <div className="input-group-append">
+                    <Button className={styles.search__submitButton}
+                            onClick={() => setSearchInput(document.getElementById('searchInput').value)}>Go!
+                    </Button>
+                </div>
+            </div>
+        )
+    }
+
+    function handleCertificateEdit(values) {
+        setAddModalPresetValues(values)
+        setAddModalDisplay(true)
+    }
+
+    function handleCertificateDeletion(certificate) {
+        setDeleteModalDisplay(true)
+        setCertificateToDelete(certificate)
+    }
+
+    function handleAddModalSuccess(message) {
+        setAddModalDisplay(false)
+        setAddModalPresetValues(null)
+        setSuccessMessage(message)
+        dispatchCertificatesFetch()
+    }
+
+    function handleAddModalCancel() {
+        setAddModalDisplay(false)
+        setAddModalPresetValues(null)
+    }
+
+    function handleDeleteModalConfirm(certificate) {
+        setDeleteModalDisplay(false)
 
         axios
-        .delete(`/gift-certificates/${certificateId}`)
-        .then(() => {
-            forceFetch()
-            // setCertificates([])
-        })
-        .catch(error => {
-            forceFetch()
-            // setCertificates([])
-            document.getElementById('errorMessage').textContent = error.response.data.errorMessage
-            document.getElementById('error').style.display = 'flex'
-        })
+            .delete(`/api/gift-certificates/${certificate.id}`)
+            .then(() => {
+                setSuccessMessage(`Coupon "${certificate.name}" was deleted.`)
+                dispatchCertificatesFetch()
+            })
+            .catch((error) => {
+                setErrorMessage(error.response.data.errorMessage)
+                dispatchCertificatesFetch()
+            })
     }
 
-    function onDeleteModalCancel() {
-        console.log('cancel here')
-        setDeleteModalShow(false)
+    function handleDeleteModalCancel() {
+        setDeleteModalDisplay(false)
     }
-
-    // function handleSort(currentSort, sortIconElement) {
-    //     let resultSort = currentSort === 'asc'
-    //         ? 'expand_more'
-    //         : currentSort === 'desc'
-    //             ? 'expand_less'
-    //             : 'unfold_more'
-    //     // if (currentSort === 'asc') {
-    //     //     resultSort = 'desc'
-    //     // } else if (currentSort === 'desc') {
-    //     //     resultSort = null
-    //     // } else {
-    //     //     resultSort = 'asc'
-    //     // }
-    //     sortIconElement.textContent = getSortIconName(resultSort)
-    //
-    //     return resultSort
-    // }
 
     function getNextSort(currentSort) {
-        return currentSort === 'asc'
-            ? 'desc'
-            : currentSort === 'desc'
-                ? null
-                : 'asc'
+        if (currentSort === 'asc') {
+            return 'desc'
+        } else if (currentSort === 'desc') {
+            return null
+        } else {
+            return 'asc'
+        }
     }
 
-    function getSortIconName(sort) {
-        return sort === 'asc'
-            ? 'expand_less'
-            : sort === 'desc'
-                ? 'expand_more'
-                : 'unfold_more'
+    function setErrorMessage(message) {
+        document.getElementById('success').classList.add('d-none')
+        document.getElementById('error').classList.remove('d-none')
+        document.getElementById('errorMessage').textContent = message
+
+        setTimeout(() => document.getElementById('error').classList.add('d-none'), 10 * 1000)
     }
-}
 
-async function getNoOfPages() {
-    let result
+    function setSuccessMessage(message) {
+        document.getElementById('error').classList.add('d-none')
+        document.getElementById('success').classList.remove('d-none')
+        document.getElementById('successMessage').textContent = message
 
-    await axios
-    .get('/gift-certificates/count')
-    .then(response => result = response.data._embedded.count)
-
-
-    return result
+        setTimeout(() => document.getElementById('success').classList.add('d-none'), 3 * 1000)
+    }
 }
 
 export default Certificates

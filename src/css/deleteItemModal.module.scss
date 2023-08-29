@@ -1,0 +1,21 @@
+@import "../css/elements/modal.module";
+
+.modal__text {
+    margin: 3rem 0;
+    padding: 0 3rem;
+}
+
+.modal__actions {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+
+    .actions__confirm {
+        margin-right: 0.5rem;
+        width: 5rem;
+    }
+
+    .actions__cancel {
+        width: 5rem;
+    }
+}
