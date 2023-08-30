@@ -31,18 +31,22 @@ function AddItemForm() {
     const validationSchema = () =>
         Yup.object({
             name: Yup.string()
-                .min(6, 'Must be 6-30 characters')
-                .max(30, 'Must be 6-30 characters')
-                .required('Required'),
+                  .min(6, 'Must be 6-30 characters')
+                  .max(30, 'Must be 6-30 characters')
+                  .required('Required'),
             description: Yup.string()
-                .min(12, 'Must be 12-1000 characters')
-                .max(1000, 'Must be 12-1000 characters')
-                .required('Required'),
-            price: Yup.number().positive('Must be positive number').required('Required'),
+                         .min(12, 'Must be 12-1000 characters')
+                         .max(1000, 'Must be 12-1000 characters')
+                         .required('Required'),
+            price: Yup.number()
+                   .typeError('Must be number')
+                   .positive('Must be positive number')
+                   .required('Required'),
             duration: Yup.number()
-                .integer('Must be non-negative integer number')
-                .min(0, 'Must be non-negative integer number')
-                .required('Required')
+                      .typeError('Must be number')
+                      .integer('Must be non-negative integer number')
+                      .min(0, 'Must be non-negative integer number')
+                      .required('Required')
         })
 
     const initialFormValues =
@@ -61,7 +65,7 @@ function AddItemForm() {
             validationSchema={validationSchema}
             onSubmit={(values) => handleFormSubmit(values, successCallback)}
         >
-            {() =>
+            {(formik) =>
                 <Form>
                     <div className={`text-danger d-none ${styles.error}`} id="addItemError">
                         <Error className={styles.error__icon} />
@@ -93,8 +97,8 @@ function AddItemForm() {
                     </div>
 
                     <div className={styles.formActions}>
-                        <Button className={styles.formActions__submit} type="submit">
-                            Submit
+                        <Button className={`${formik.isValid ? '' : 'disabled'} ${styles.formActions__submit}`}
+                                type="submit">Submit
                         </Button>
                         <Button className="btn-secondary" onClick={onCancel}>
                             Cancel

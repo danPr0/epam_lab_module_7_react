@@ -32,7 +32,7 @@ function Certificates() {
 
     const [currentPage, setCurrentPage] = useState(urlParams.get('page') === null ? 1 : parseInt(urlParams.get('page')))
     const [noOfPages, setNoOfPages] = useState(0)
-    const [totalPerPage, setTotalPerPage] =
+    const [pageSize, setPageSize] =
               useState(urlParams.get('total') === null ? 10 : parseInt(urlParams.get('total')))
     const [searchInput, setSearchInput] =
               useState(decodeURIComponent(urlParams.get('search') === null ? '' : urlParams.get('search')))
@@ -49,7 +49,7 @@ function Certificates() {
         const navigationParams = {
             search: encodeURIComponent(searchInput),
             page: currentPage.toString(),
-            total: totalPerPage.toString()
+            total: pageSize.toString()
         }
         if (dateSort !== null) {
             navigationParams.dateSort = dateSort
@@ -59,7 +59,7 @@ function Certificates() {
         }
 
         return navigationParams
-    }, [currentPage, dateSort, nameSort, totalPerPage, searchInput])
+    }, [currentPage, dateSort, nameSort, pageSize, searchInput])
 
     const createRequestParams = useCallback(() => {
         const tagPattern = /#\([^)]*\)/g
@@ -67,7 +67,7 @@ function Certificates() {
         const requestParams = new URLSearchParams()
         requestParams.append('textFilter', searchInput.replaceAll(tagPattern, '').trim())
         requestParams.append('page', currentPage.toString())
-        requestParams.append('total', totalPerPage.toString())
+        requestParams.append('total', pageSize.toString())
 
         let tagsInput = searchInput.match(tagPattern)
         if (tagsInput !== null) {
@@ -82,7 +82,7 @@ function Certificates() {
         }
 
         return requestParams
-    }, [currentPage, dateSort, nameSort, totalPerPage, searchInput])
+    }, [currentPage, dateSort, nameSort, pageSize, searchInput])
 
     const fetchCertificates = useCallback(() => {
         axios
@@ -135,8 +135,8 @@ function Certificates() {
                                        onItemDelete={handleCertificateDeletion} />
                             </SortContext.Provider>
                             <PaginationContext.Provider
-                                value={{ page: currentPage, total: totalPerPage, noOfPages,
-                                    setPage: setCurrentPage, setTotal: setTotalPerPage }}>
+                                value={{ page: currentPage, total: pageSize, noOfPages,
+                                    setPage: setCurrentPage, setTotal: setPageSize }}>
                                 <Pagination />
                             </PaginationContext.Provider>
                         </div>

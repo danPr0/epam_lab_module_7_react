@@ -10,8 +10,8 @@ function Header(props) {
         <header>
             <Navbar className="bg-dark">
                 <Container className="text-secondary">
-                    <Navbar.Brand className="text-secondary" href="/">
-                        Admin UI
+                    <Navbar.Brand className='text-secondary' onClick={() => navigate('/certificates')}
+                                  style={{ cursor: 'pointer' }}>Admin UI
                     </Navbar.Brand>
                     {
                         isAuthenticated()
@@ -21,7 +21,11 @@ function Header(props) {
                                 <span className='ms-auto me-3'>{localStorage.getItem('email')}</span>
                                 <button className='btn btn-secondary' onClick={logout}>Logout</button>
                             </>
-                            : null
+                            :
+                            <button
+                                className={`${location.pathname === '/login' ? 'd-none' : ''} ms-auto btn btn-primary`}
+                                      onClick={() => navigate('/login')}>Login
+                            </button>
                     }
                 </Container>
             </Navbar>
