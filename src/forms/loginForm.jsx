@@ -1,62 +1,74 @@
-import {Button} from 'react-bootstrap'
-import {Form, Formik} from 'formik'
-import * as Yup from "yup";
+import { useNavigate } from 'react-router-dom'
+import LoginFormInput from './formInputs/loginFormInput'
+
 import axios from 'axios'
-import {useNavigate} from 'react-router-dom'
-import {useState} from 'react'
-import LoginFormInput from './formElements/loginFormInput'
+import { Form, Formik } from 'formik'
+import * as Yup from 'yup'
+import { Button } from 'react-bootstrap'
+
+import styles from '../css/login.module.scss'
 
 function LoginForm() {
-
-    const [declinedRequestMessage, setDeclinedRequestMessage] = useState('')
     const navigate = useNavigate()
 
     const validationSchema = () =>
         Yup.object({
-            email: Yup.string()
-                      .min(3, 'Must be 3-30 characters')
-                      .max(30, 'Must be 3-30 characters')
-                      .required('Required'),
+            email: Yup.string().email('Must be valid email').required('Required'),
             password: Yup.string()
-                      .min(4, 'Must be 4-30 characters')
-                      .max(30, 'Must be 4-30 characters')
-                      .required('Required')
+                .min(4, 'Must be 4-30 characters')
+                .max(30, 'Must be 4-30 characters')
+                .required('Required')
         })
 
     return (
-        <Formik initialValues={{
-            email: '',
-            password: ''
-        }}
-                validationSchema={validationSchema}
-                onSubmit={values => handleSubmit(values)}
+        <Formik
+            initialValues={{ email: '', password: '' }}
+            validationSchema={validationSchema}
+            onSubmit={(values) => handleFormSubmit(values)}
         >
-            {formik => (
-                <Form className="login-form">
-                    <div className="login-form__inputs-group">
-                        <LoginFormInput className="mb-3" type="text" placeholder="Email" name="email"/>
-                        <LoginFormInput type="password" placeholder="Password" name="password"/>
-                    </div>
+            {(formik) =>
+                <Form className={styles.login__form}>
+                    <LoginFormInput className="mb-3" type="text" placeholder="Email" name="email" />
+                    <LoginFormInput type="password" placeholder="Password" name="password" />
 
-                    <div className="text-danger login-error-msg">{declinedRequestMessage}</div>
+                    <div className={`text-danger ${styles.form__error}`} id="loginFormError"></div>
 
-                    <Button className={formik.isValid ? "" : "disabled"} disabled={!formik.isValid}
-                            type="submit">
+                    <Button className={formik.isValid ? '' : 'disabled'} disabled={!formik.isValid} type="submit">
                         Login
                     </Button>
                 </Form>
-            )}
+            }
         </Formik>
     )
 
-    function handleSubmit(values) {
+    function handleFormSubmit(values) {
         axios
-        .post('/auth/sign-in', values)
-        .then(() => {
-            sessionStorage.setItem('email', values.email)
-            navigate('/certificates')
-        })
-        .catch(error => setDeclinedRequestMessage(error.response.data.errorMessage))
+            .post('/api/auth/sign-in', values)
+            .then(() => {
+                localStorage.setItem('email', values.email)
+                localStorage.setItem('authenticated', 'true')
+
+                handleAuthExpiration()
+                navigate('/certificates')
+            })
+            .catch(error => {
+                    document.getElementById('loginFormError').textContent = error.response.data.errorMessage
+                }
+            )
+    }
+
+    function handleAuthExpiration() {
+        const interval = setInterval(
+            () => {
+                axios.get('/api/check-authentication').catch((error) => {
+                    if (error.response.status === 401) {
+                        localStorage.setItem('authenticated', 'false')
+                        clearInterval(interval)
+                        location.reload()
+                    }
+                })
+            }, 15 * 60 * 1000
+        )
     }
 }
 
