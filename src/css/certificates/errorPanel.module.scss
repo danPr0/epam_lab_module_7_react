@@ -1,0 +1,14 @@
+@import "../elements/error.module";
+
+.error {
+  margin-bottom: 1rem;
+  height: 3rem;
+
+  &__icon {
+    font-size: 2rem !important;
+  }
+}
+
+.cursorPointer {
+  cursor: pointer;
+}

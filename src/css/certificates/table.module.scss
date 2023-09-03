@@ -1,0 +1,52 @@
+.table {
+  width: 100%;
+
+  th, td {
+    border: 2px solid #848484 !important;
+    border-collapse: collapse;
+  }
+
+  tr {
+    height: 2.5rem;
+  }
+
+  tr:nth-child(odd) {
+    background-color: white;
+  }
+
+  tr:nth-child(even) {
+    background-color: #ececec;
+  }
+
+  th {
+    background-color: #ccc !important;
+  }
+
+  td {
+    overflow: hidden;
+    max-width: 0;
+    padding: 0.25rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.w5 {
+  width: 5%;
+}
+
+.w10 {
+  width: 10%;
+}
+
+.w15 {
+  width: 15%;
+}
+
+.w20 {
+  width: 20%;
+}
+
+.cursorPointer {
+  cursor: pointer;
+}
