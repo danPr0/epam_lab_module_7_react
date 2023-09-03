@@ -4,7 +4,7 @@ import CertificatesContext from '../context/certificatesContext'
 import axios from 'axios'
 
 
-function CertificatesData({children, ...props}) {
+function CertificatesData({children, setErrorMessage}) {
 
     const navigate = useNavigate()
     const [urlParams] = useSearchParams()
@@ -79,11 +79,10 @@ function CertificatesData({children, ...props}) {
                 if (currentPage > totalPages) {
                     setCurrentPage(totalPages)
                 }
-                document.getElementById('noItemsMessage').classList.add('d-none')
             }
         })
-        .catch(error => props.setErrorMessage(error.response.data.errorMessage))
-    }, [certificatesFetch, createRequestParams, currentPage, props])
+        .catch(error => setErrorMessage(error.response.data.errorMessage))
+    }, [certificatesFetch, createRequestParams, currentPage, setErrorMessage])
 
     useEffect(() => {
         fetchCertificates()
