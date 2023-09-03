@@ -1,21 +1,20 @@
 import React, { useContext } from 'react';
-import PaginationContext from '../context/paginationContext'
-import styles from '../css/certificates.module.scss'
+import CertificatesContext from '../context/certificatesContext'
+import styles from '../css/certificates/pagination.module.scss'
+
 
 function Pagination() {
-
-    const { page, total, noOfPages, setPage, setTotal } = useContext(PaginationContext)
+    const { page, total, noOfPages, setPage, setTotal } = useContext(CertificatesContext)
 
     const pagesInLine = 10
     const totalOptions = [10, 20, 50]
-    const pages = createPages()
 
     return (
-        <div className={styles.certificates__pagination}>
+        <div className={styles.pagination}>
             <ul className="pagination justify-content-center m-0">
                 {createFirstPage()}
                 {createPreviousSet()}
-                {pages}
+                {createPages()}
                 {createNextSet()}
                 {createLastPage()}
             </ul>

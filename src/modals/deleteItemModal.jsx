@@ -8,7 +8,7 @@ function DeleteItemModal(props) {
                 <div className={styles.modal}>
                     <h1 className={styles.modal__header}>Delete confirmation</h1>
                     <p className={styles.modal__text}>
-                        Do you really want to delete certificate with id = {props.certificateId}?
+                        Do you really want to delete certificate with id = {props.certificate.id}?
                     </p>
                     <div className={styles.modal__actions}>
                         <button className={`btn btn-danger ${styles.actions__confirm}`} onClick={props.onConfirm}>
