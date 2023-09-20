@@ -3,7 +3,7 @@
 * [Technologies](#technologies)
 * [Illustrations](#illustrations)
 ## General info
-This React project contains web pages for [REST API](https://github.com/danPr0/epam_lab_module_4). 
+Admin panel for [Gift Certificates system](https://github.com/danPr0/epam_lab_module_4). 
 ## Technologies
 * ES2023
 * Node.js 16.13
